@@ -1,0 +1,20 @@
+#sign-in-container {
+  min-height: 100vh; /* Full screen height */
+  display: flex;
+  justify-content: center; /* Horizontal center */
+}
+
+#sign-in {
+  text-align: center;
+  width: 45%;
+}
+
+.MuiTextField-root {
+  margin-bottom: 10px !important; /* Space below each field */
+}
+
+@media (max-width: 750px) {
+  #sign-in {
+    width: 100% !important;
+  }
+}
