@@ -90,7 +90,7 @@ export const createTicket = async ({
       username,
       review,
     });
-    const user = createdBy;
+    const user = username;
     const ticketId = newTicket.id;
     await ticketCreatedNotification({ user, ticketId });
     return 'success';

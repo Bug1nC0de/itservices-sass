@@ -11,6 +11,10 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  runTransaction,
+  arrayUnion,
+  arrayRemove,
+  deleteField,
 } from 'firebase/firestore';
 import store from '../../store';
 import moment from 'moment';
@@ -280,6 +284,57 @@ export const sendText = async ({
   } catch (error) {
     console.error(error.message);
   }
+};
+
+//Text reaction//
+export const reactToText = async ({ emoji, userId, textId }) => {
+  if (!textId || !emoji || !userId) throw new Error('Missing params');
+
+  const ref = doc(firestore, 'texts', textId);
+
+  return runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('Text not found');
+
+    const data = snap.data() || {};
+    const reactions = data.reactions || {};
+    const current = Array.isArray(reactions[emoji]) ? reactions[emoji] : [];
+    const hasReacted = current.includes(userId);
+
+    // Build the predicted next state for optimistic UI return
+    const nextSet = new Set(current);
+    if (hasReacted) nextSet.delete(userId);
+    else nextSet.add(userId);
+    const nextArr = Array.from(nextSet);
+
+    if (hasReacted) {
+      // Remove my reaction; delete key if it would become empty
+      if (current.length === 1) {
+        tx.update(ref, {
+          [`reactions.${emoji}`]: deleteField(),
+          updatedAt: moment().format(),
+        });
+      } else {
+        tx.update(ref, {
+          [`reactions.${emoji}`]: arrayRemove(userId),
+          updatedAt: moment().format(),
+        });
+      }
+    } else {
+      // Add my reaction (creates the array if missing)
+      tx.update(ref, {
+        [`reactions.${emoji}`]: arrayUnion(userId),
+        updatedAt: moment().format(),
+      });
+    }
+
+    // Return the next reactions map so caller can update UI immediately
+    const nextReactions = { ...reactions };
+    if (nextArr.length) nextReactions[emoji] = nextArr;
+    else delete nextReactions[emoji];
+
+    return nextReactions;
+  });
 };
 
 //Delete text//

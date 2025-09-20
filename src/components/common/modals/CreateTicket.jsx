@@ -9,6 +9,8 @@ import {
   FormControl,
   InputLabel,
   Input,
+  Grid,
+  useTheme,
 } from '@mui/material';
 import moment from 'moment';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
@@ -16,6 +18,7 @@ import { createTicketForUser } from '../../../api/users/helpdeskApi';
 import { createTicket } from '../../../api/users/callitservicesApi';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import { tokens } from '../../../theme';
 
 const style = {
   position: 'absolute',
@@ -30,6 +33,8 @@ const style = {
 };
 
 const CreateTicket = ({ client, clientUser, user }) => {
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -74,12 +79,7 @@ const CreateTicket = ({ client, clientUser, user }) => {
           email,
           createdBy,
         });
-        setSubmitting(true);
-        setFormData({
-          header: '',
-          desc: '',
-        });
-        setHowBad('');
+
         toast.success('Ticket created for user successfully');
         handleClose();
       } else {
@@ -98,10 +98,27 @@ const CreateTicket = ({ client, clientUser, user }) => {
           email,
           createdBy,
         });
+
         toast.success('Ticket created successfully');
         handleClose();
       }
+      setSubmitting(false);
+      setFormData({
+        header: '',
+        desc: '',
+      });
+      setHowBad('');
     }
+  };
+
+  const cancelCreation = () => {
+    setSubmitting(false);
+    setFormData({
+      header: '',
+      desc: '',
+    });
+    setHowBad('');
+    handleClose();
   };
 
   return (
@@ -162,15 +179,37 @@ const CreateTicket = ({ client, clientUser, user }) => {
                 name="desc"
               />
             </FormControl>
-            {submitting === true ? (
-              <Button variant="contained" disabled>
-                Submiting...
-              </Button>
-            ) : (
-              <Button variant="contained" type="submit">
-                Submit
-              </Button>
-            )}
+            <Grid container>
+              <Grid size={{ xs: 6 }}>
+                <Button
+                  onClick={cancelCreation}
+                  variant="outlined"
+                  color={colors.primary[700]}
+                  style={{ width: '80%' }}
+                >
+                  Cancel
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                {submitting === true ? (
+                  <Button
+                    variant="contained"
+                    disabled
+                    style={{ width: '100%' }}
+                  >
+                    Submiting...
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    type="submit"
+                    style={{ width: '80%' }}
+                  >
+                    Submit
+                  </Button>
+                )}
+              </Grid>
+            </Grid>
           </form>
         </Box>
       </Modal>

@@ -32,7 +32,7 @@ const CloseTicket = ({
   ticketNum,
   username,
   userId,
-  profileType,
+  userClientId,
 }) => {
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -42,7 +42,7 @@ const CloseTicket = ({
   const done = async () => {
     setClosing(true);
 
-    if (profileType === 'itservices') {
+    if (!userClientId) {
       const res = await closeTicket({
         ticketId,
         email,
@@ -84,7 +84,7 @@ const CloseTicket = ({
             Are you sure you would like to close the ticket?
           </Typography>
           <Divider />
-          <Grid container>
+          <Grid container sx={{ mt: 4 }}>
             <Grid size={{ xs: 6 }}>
               <Button variant="outlined" onClick={handleClose}>
                 No

@@ -35,7 +35,7 @@ const ClaimTicket = ({
   createdBy,
   username,
   userId,
-  profileType,
+  userClientId,
 }) => {
   const [open, setOpen] = useState(false);
   const [assignedId, setAssignedId] = useState(null);
@@ -53,7 +53,7 @@ const ClaimTicket = ({
 
   const forMe = async () => {
     setClaiming(true);
-    if (profileType === 'itservices') {
+    if (!userClientId) {
       const res = await claimTicket({
         ticketId,
         techId,
@@ -115,7 +115,7 @@ const ClaimTicket = ({
           <Typography variant="h6" component="h2">
             Are you sure you want to claim this ticket?
           </Typography>
-          <Grid container>
+          <Grid container sx={{ mt: 4 }}>
             <Grid size={{ xs: 6 }}>
               <Button variant="outlined" onClick={handleClose}>
                 No

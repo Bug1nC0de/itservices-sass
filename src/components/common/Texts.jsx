@@ -16,12 +16,13 @@ import {
 import { tokens } from '../../theme';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import ReplyIcon from '@mui/icons-material/Reply';
-import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import ReactAudioPlayer from 'react-audio-player';
-import { deleteText } from '../../api/main/helpdeskApi';
+import { deleteText, reactToText } from '../../api/main/helpdeskApi';
 import { deleteFile } from '../../api/storageApi';
 import { toast } from 'react-toastify';
 import moment from 'moment';
+import ReactionPopover from './modals/ReactionPopover';
+import ReactionBar from './ReactionBar';
 
 const style = {
   position: 'absolute',
@@ -44,6 +45,7 @@ const Text = ({ text, userId, toggleScroll, scrollToText }) => {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [selectedText, setSelectedText] = useState(null);
+  const [reactions, setReactions] = useState();
   const handleOpen = (text) => {
     setSelectedText(text);
     setOpen(true);
@@ -52,6 +54,7 @@ const Text = ({ text, userId, toggleScroll, scrollToText }) => {
   let deleteBtn = useRef();
   useEffect(() => {
     if (text) {
+      setReactions(text.reactions);
       if (text.authorId === userId) {
         setAuthor('You');
       } else {
@@ -86,8 +89,11 @@ const Text = ({ text, userId, toggleScroll, scrollToText }) => {
     toggleScroll(text);
   };
 
-  const handleEmoji = () => {
-    console.log('handle emoji');
+  const onEmojiSelect = async (emoji) => {
+    //react to text//
+    const textId = text.id;
+    const res = await reactToText({ emoji, userId, textId });
+    setReactions(res);
   };
 
   const deleteTheText = async () => {
@@ -104,13 +110,16 @@ const Text = ({ text, userId, toggleScroll, scrollToText }) => {
       toast.success('Delete Successfull');
       handleClose();
     } catch (error) {
-      console.log('Error Deleting Text: ', error);
+      toast.success(error);
+      handleClose();
     }
   };
 
   const handleScrollToText = () => {
     scrollToText(text.replyTo.id);
   };
+
+  const toggleReaction = () => {};
 
   return (
     <>
@@ -197,15 +206,20 @@ const Text = ({ text, userId, toggleScroll, scrollToText }) => {
               <IconButton onClick={handleReply} size="small" color="primary">
                 <ReplyIcon fontSize="small" />
               </IconButton>
-              <IconButton
-                onClick={handleEmoji}
+              <ReactionPopover
                 size="small"
-                sx={{ color: colors.greenAccent[600] }}
-              >
-                <EmojiEmotionsIcon fontSize="small" />
-              </IconButton>
+                onEmojiSelect={onEmojiSelect}
+                from="text"
+              />
             </Box>
           )}
+        </Box>
+        <Box sx={{ px: 1 }}>
+          <ReactionBar
+            reactions={reactions}
+            userId={userId}
+            onToggle={(emoji) => toggleReaction(emoji)}
+          />
         </Box>
         <Typography
           variant="caption"

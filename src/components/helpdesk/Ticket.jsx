@@ -42,6 +42,7 @@ import ClaimTicket from '../common/modals/ClaimTicket';
 import CloseTicket from '../common/modals/CloseTicket';
 import FileUpload from '../common/FileUpload';
 import LiveAudioVisualizer from '../common/LiveAudioVisualizer';
+import ReactionPopover from '../common/modals/ReactionPopover';
 
 const Ticket = () => {
   const { id } = useParams();
@@ -49,12 +50,14 @@ const Ticket = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { userInfo } = useSelector((state) => state.auth);
+  const profileType = userInfo.profileType;
   const { name } = userInfo;
   const { ticket, texts } = useSelector((state) => state.helpdesk);
   const { file_url, progress } = useSelector((state) => state.storage);
   let closeBtn = useRef();
   const [ticketType, setTicketType] = useState('');
   const [ticketTitle, setTicketTitle] = useState('');
+
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState(null);
   const scroll = useRef();
@@ -184,6 +187,11 @@ const Ticket = () => {
       setSending(false);
     }
   }, [file_url, id, sendText, userInfo, name, ticketType]);
+
+  const onEmojiSelect = (emoji) => {
+    let txt = text + emoji;
+    setText(txt);
+  };
   const onSubmit = async (e) => {
     e.preventDefault();
     if (audioBlob) {
@@ -249,6 +257,7 @@ const Ticket = () => {
     desc,
     review,
     userId,
+    userClientId,
   } = ticket;
 
   return (
@@ -313,36 +322,38 @@ const Ticket = () => {
               </List>
               <Divider />
             </Grid>
-            {!isComplete && (
-              <Grid size={{ xs: 12, md: 3 }}>
-                <List disablePadding>
-                  <ListItem disableGutters sx={{ py: 1 }}>
-                    <ClaimTicket
-                      techId={userInfo.id}
-                      techName={userInfo.name}
-                      ticketId={id}
-                      assignedTo={assignedTo}
-                      email={email}
-                      createdBy={createdBy}
-                      username={username}
-                      userId={userId}
-                      profileType={userInfo.profileType}
-                    />
-                  </ListItem>
-                  <ListItem disableGutters sx={{ py: 1 }}>
-                    <CloseTicket
-                      ticketId={id}
-                      closeBtn={closeBtn}
-                      email={email}
-                      ticketNum={ticketNum}
-                      username={username}
-                      userId={userId}
-                      profileType={userInfo.profileType}
-                    />
-                  </ListItem>
-                </List>
-              </Grid>
-            )}
+            {ticketType === 'Main' &&
+              profileType === 'itservices' &&
+              !isComplete && (
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <List disablePadding>
+                    <ListItem disableGutters sx={{ py: 1 }}>
+                      <ClaimTicket
+                        techId={userInfo.id}
+                        techName={userInfo.name}
+                        ticketId={id}
+                        assignedTo={assignedTo}
+                        email={email}
+                        createdBy={createdBy}
+                        username={username}
+                        userId={userId}
+                        userClientId={userClientId}
+                      />
+                    </ListItem>
+                    <ListItem disableGutters sx={{ py: 1 }}>
+                      <CloseTicket
+                        ticketId={id}
+                        closeBtn={closeBtn}
+                        email={email}
+                        ticketNum={ticketNum}
+                        username={username}
+                        userId={userId}
+                        userClientId={userClientId}
+                      />
+                    </ListItem>
+                  </List>
+                </Grid>
+              )}
           </Grid>
         </Grid>
         {/* Right side */}
@@ -496,6 +507,7 @@ const Ticket = () => {
                   />
                 )}
                 {/* Actions on the right */}
+                <ReactionPopover size="medium" onEmojiSelect={onEmojiSelect} />
                 {!audioURL ? (
                   <IconButton
                     size="medium"
