@@ -24,7 +24,7 @@ import {
   ticketCreatedNotification,
   messageNotification,
   ticketClosedNotification,
-} from '../backendApi';
+} from '../main/main-notifications';
 import moment from 'moment';
 
 //Fetch Tickets//

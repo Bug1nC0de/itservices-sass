@@ -10,6 +10,10 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
+  runTransaction,
+  deleteField,
+  arrayRemove,
+  arrayUnion,
 } from 'firebase/firestore';
 import moment from 'moment';
 import { firestore } from '../../firebse-config';
@@ -23,7 +27,7 @@ import {
   setFeature,
   setTexts,
 } from '../../slices/projectSlice';
-import { notifyCollab } from '../backendApi';
+import { notifyCollab, projectTextNotification } from './main-notifications';
 
 //Get Projects//
 export const getProjects = () => {
@@ -135,7 +139,6 @@ export const assignUser = async ({ projectId, proUser }) => {
 
 //Find all project next//
 export const fetchProjectNext = async (projectId) => {
-  console.log('Next: ', projectId);
   const q = query(
     collection(firestore, 'next'),
     where('projectId', '==', projectId),
@@ -245,8 +248,10 @@ export const addNext = async ({ text, projectId, createdAt }) => {
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
 
     await fetchProjectNext(projectId);
+    return 'success';
   } catch (error) {
     console.error(error.message);
+    return 'failed';
   }
 };
 
@@ -258,23 +263,25 @@ export const upDateNext = async ({
   howLong,
   assigned,
   projectId,
+  createdBy,
 }) => {
   const nextRef = doc(firestore, 'next', id);
   try {
     const newFields = { start, guessEnd, howLong, assigned };
     await updateDoc(nextRef, newFields);
 
-    const assignedTo = assigned;
+    const assignedTo = assigned ?? [];
     const title = 'Project next updated';
-    const text = `${assigned.name}: Assigned project task...`;
-    const createdBy = '';
+    const text = `${createdBy.name}: Assigned project task...`;
     const type = 'project';
     const id = projectId;
 
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
     await fetchProjectNext(projectId);
+    return 'success';
   } catch (error) {
     console.error(error.message);
+    return 'failed';
   }
 };
 
@@ -311,17 +318,37 @@ export const completeNext = async ({
   const createdBy = theProject.createdBy;
   const type = 'project';
 
-  await notifyCollab({
-    assignedTo,
-    title,
-    text,
-    createdBy,
-    type,
-    id: projectId,
-  });
+  try {
+    await notifyCollab({
+      assignedTo,
+      title,
+      text,
+      createdBy,
+      type,
+      id: projectId,
+    });
 
-  await fetchProjectMilestones(projectId);
-  await fetchProjectNext(projectId);
+    await fetchProjectMilestones(projectId);
+    await fetchProjectNext(projectId);
+    return 'success';
+  } catch (error) {
+    console.error('Error completing project next:', error);
+    return 'failed';
+  }
+};
+
+//Update who is responsible for project next//
+export const updateResponsible = async ({ nextId, assigned, projectId }) => {
+  const nextRef = doc(firestore, 'next', nextId);
+  try {
+    const newFields = { assigned };
+    await updateDoc(nextRef, newFields);
+    await fetchProjectNext(projectId);
+    return 'success';
+  } catch (error) {
+    console.error('Error updating responsibility: ', error);
+    return 'failed';
+  }
 };
 
 //Complete Project//
@@ -349,13 +376,12 @@ export const projectDone = async (projectId) => {
 
 //Fetch project texts//
 export const fetchProjectTexts = (projectId) => {
-  const textRef = collection(firestore, 'projectTexts');
+  const textRef = collection(firestore, 'project_texts');
   const q = query(
     textRef,
     where('projectId', '==', projectId),
     orderBy('createdAt')
   );
-
   const unsub = onSnapshot(q, (snapshot) => {
     let texts = [];
     snapshot.docs.forEach((doc) => {
@@ -364,6 +390,102 @@ export const fetchProjectTexts = (projectId) => {
     store.dispatch(setTexts(texts));
   });
   return unsub;
+};
+
+//Send project Texts//
+export const sendProjectText = async ({
+  imgUrl,
+  text,
+  authorId,
+  authorName,
+  projectId,
+  createdAt,
+  replyTo,
+}) => {
+  const message = collection(firestore, 'project_texts');
+
+  try {
+    await addDoc(message, {
+      imgUrl,
+      text,
+      authorId,
+      authorName,
+      projectId,
+      createdAt,
+      replyTo,
+    });
+
+    let title = 'Project Notification';
+    const referenceId = projectId;
+
+    await projectTextNotification({ title, text, referenceId });
+
+    //   dispatch({ type: CLEAR_UPLOAD });
+  } catch (error) {
+    console.error(error.message);
+  }
+};
+
+//react to text//
+export const reactToText = async ({ emoji, userId, textId }) => {
+  if (!textId || !emoji || !userId) throw new Error('Missing params');
+
+  const ref = doc(firestore, 'project_texts', textId);
+
+  return runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('Text not found');
+
+    const data = snap.data() || {};
+    const reactions = data.reactions || {};
+    const current = Array.isArray(reactions[emoji]) ? reactions[emoji] : [];
+    const hasReacted = current.includes(userId);
+
+    // Build the predicted next state for optimistic UI return
+    const nextSet = new Set(current);
+    if (hasReacted) nextSet.delete(userId);
+    else nextSet.add(userId);
+    const nextArr = Array.from(nextSet);
+
+    if (hasReacted) {
+      // Remove my reaction; delete key if it would become empty
+      if (current.length === 1) {
+        tx.update(ref, {
+          [`reactions.${emoji}`]: deleteField(),
+          updatedAt: moment().format(),
+        });
+      } else {
+        tx.update(ref, {
+          [`reactions.${emoji}`]: arrayRemove(userId),
+          updatedAt: moment().format(),
+        });
+      }
+    } else {
+      // Add my reaction (creates the array if missing)
+      tx.update(ref, {
+        [`reactions.${emoji}`]: arrayUnion(userId),
+        updatedAt: moment().format(),
+      });
+    }
+
+    // Return the next reactions map so caller can update UI immediately
+    const nextReactions = { ...reactions };
+    if (nextArr.length) nextReactions[emoji] = nextArr;
+    else delete nextReactions[emoji];
+
+    return nextReactions;
+  });
+};
+
+//Delete Text//
+export const deleteText = async (textId) => {
+  try {
+    await deleteDoc(doc(firestore, 'project_texts', textId));
+    return 'success';
+  } catch (error) {
+    console.log('Error deleting ticket: ', error);
+    return 'failed';
+  }
 };
 
 //Delete Profect//

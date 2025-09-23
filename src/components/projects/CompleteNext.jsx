@@ -11,13 +11,20 @@ import {
   Divider,
   Typography,
   IconButton,
+  LinearProgress,
 } from '@mui/material';
+import {
+  completeNext,
+  upDateNext,
+  updateResponsible,
+} from '../../api/main/projectApi';
 import { DoneAll, Cancel, Update, BorderColor } from '@mui/icons-material';
 import moment from 'moment';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import ListOfTechs from '../management/ListOfTechs';
 import NextPredict from './NextPredict';
+import { toast } from 'react-toastify';
 
 const style = {
   position: 'absolute',
@@ -33,15 +40,18 @@ const style = {
   pb: 3,
 };
 
-const CompleteNext = ({ next }) => {
+const CompleteNext = ({ next, projectId, createdBy }) => {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
   const [endDate, setEndDate] = useState('');
   const [startDate, setStartDate] = useState('');
   const [howLong, setHowLong] = useState(next.howLong);
-  const [assigned, setAssigned] = useState([next.assigned]);
+  const [assigned, setAssigned] = useState();
+  const [loading, setLoading] = useState(false);
+  const [tempAssigned, setTempAssigned] = useState([]);
 
   useEffect(() => {
+    setAssigned(next.assigned);
     if (next.start) {
       setStartDate(new Date(next.start));
     } else {
@@ -79,13 +89,89 @@ const CompleteNext = ({ next }) => {
     setOpen(false);
   };
 
-  const addTech = () => {};
-  const removeTech = () => {};
-  const updateMyCollab = () => {};
+  const addTech = (tech) => {
+    let newArr = tempAssigned.concat(tech);
+    setTempAssigned(newArr);
+  };
+  const removeTech = (techId) => {
+    const newArr = tempAssigned.filter((tech) => {
+      return tech.id !== techId;
+    });
+    setTempAssigned(newArr);
+  };
+  const updateMyCollab = async () => {
+    setLoading(true);
+    let assigned = tempAssigned;
+    let nextId = next.id;
+    const res = await updateResponsible({ nextId, assigned, projectId });
+    if (res === 'success') {
+      toast.success('Update successful');
+    } else {
+      toast.error('Update unsuccessful');
+    }
+    setLoading(false);
+  };
 
-  const begin = () => {};
-  const update = () => {};
-  const finish = () => {};
+  const begin = (date) => {
+    setStartDate(new Date(date));
+    let begin = moment(date).format();
+    let a = howLong.split(' ').shift();
+
+    let end = moment(begin).add(+a, 'w').format();
+    setEndDate(new Date(end));
+  };
+
+  const update = async () => {
+    setLoading(true);
+    let id = next.id;
+
+    let start = moment(startDate).format();
+    let guessEnd = moment(endDate).format();
+
+    const res = await upDateNext({
+      id,
+      start,
+      guessEnd,
+      howLong,
+      assigned,
+      projectId,
+      createdBy,
+    });
+    if (res === 'success') {
+      toast.success('Update Successful');
+    } else {
+      toast.error('Update failed');
+    }
+    setLoading(false);
+    setOpen(false);
+  };
+
+  const finish = async () => {
+    setLoading(true);
+    let completedAt = moment().format();
+    const id = next.id;
+    const text = next.text;
+    let start = moment(startDate).format();
+    let guessEnd = moment(endDate).format();
+
+    const res = await completeNext({
+      id,
+      completedAt,
+      start,
+      guessEnd,
+      projectId,
+      assigned,
+      text,
+    });
+
+    if (res === 'success') {
+      toast.success('Update successful');
+    } else {
+      toast.error('Update failed');
+    }
+    setLoading(false);
+    setOpen(false);
+  };
   return (
     <div>
       {done ? (
@@ -127,13 +213,13 @@ const CompleteNext = ({ next }) => {
             Manage Next: <b>{next.text}</b>
           </Alert>
           <Grid container>
-            <Grid xs={6} item>
+            <Grid size={{ xs: 6 }}>
               <Typography sx={{ marginTop: '10px' }} variant="h6">
                 Who is responsible?
               </Typography>
             </Grid>
 
-            <Grid xs={6} item>
+            <Grid size={{ xs: 6 }}>
               <ListOfTechs
                 addTech={addTech}
                 removeTech={removeTech}
@@ -168,38 +254,42 @@ const CompleteNext = ({ next }) => {
             </Grid>
           </Grid>
           <Divider sx={{ marginBottom: '20px' }} />
-          <Grid sx={{ align: 'center' }} spacing={4} container>
-            <Grid xs={4} item>
-              <Button
-                variant="outlined"
-                color="warning"
-                onClick={handleClose}
-                fullWidth
-              >
-                Cancel <Cancel />
-              </Button>
+          {loading ? (
+            <LinearProgress color="success" />
+          ) : (
+            <Grid sx={{ align: 'center' }} spacing={4} container>
+              <Grid size={{ xs: 4 }}>
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  onClick={handleClose}
+                  fullWidth
+                >
+                  Cancel <Cancel />
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 4 }}>
+                <Button
+                  onClick={update}
+                  variant="outlined"
+                  color="info"
+                  fullWidth
+                >
+                  Update <Update />
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 4 }}>
+                <Button
+                  onClick={finish}
+                  variant="outlined"
+                  color="success"
+                  fullWidth
+                >
+                  Complete <DoneAll />
+                </Button>
+              </Grid>
             </Grid>
-            <Grid xs={4} item>
-              <Button
-                onClick={update}
-                variant="outlined"
-                color="info"
-                fullWidth
-              >
-                Update <Update />
-              </Button>
-            </Grid>
-            <Grid xs={4} item>
-              <Button
-                onClick={finish}
-                variant="outlined"
-                color="success"
-                fullWidth
-              >
-                Complete <DoneAll />
-              </Button>
-            </Grid>
-          </Grid>
+          )}
         </Box>
       </Modal>
     </div>

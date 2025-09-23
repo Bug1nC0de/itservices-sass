@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { firestore } from '../../firebse-config';
 import moment from 'moment';
-import { sendCollabNotification } from '../backendApi';
+import { sendCollabNotification } from './client-notifications';
 import store from '../../store';
 import {
   setMyTodos,

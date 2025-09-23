@@ -25,7 +25,7 @@ import {
   setTodoDeadLine,
   setTaskList,
 } from './../../slices/todoSlice';
-import { notifyCollab } from '../backendApi';
+import { notifyCollab } from './main-notifications';
 
 //Fetch Todo's//
 export const fetchTodos = async (techId) => {

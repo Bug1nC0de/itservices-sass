@@ -14,7 +14,7 @@ import {
   updateDoc,
   setDoc,
 } from 'firebase/firestore';
-import { notifyCollab } from '../backendApi';
+import { notifyCollab } from './main-notifications';
 import {
   setLeadNotes,
   setLeadFollowUps,

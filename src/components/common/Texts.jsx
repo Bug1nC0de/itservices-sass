@@ -17,7 +17,6 @@ import { tokens } from '../../theme';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import ReplyIcon from '@mui/icons-material/Reply';
 import ReactAudioPlayer from 'react-audio-player';
-import { deleteText, reactToText } from '../../api/main/helpdeskApi';
 import { deleteFile } from '../../api/storageApi';
 import { toast } from 'react-toastify';
 import moment from 'moment';
@@ -36,7 +35,14 @@ const style = {
   p: 4,
 };
 
-const Text = ({ text, userId, toggleScroll, scrollToText }) => {
+const Texts = ({
+  text,
+  userId,
+  toggleScroll,
+  scrollToText,
+  deleteText,
+  reactToText,
+}) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [author, setAuthor] = useState();
@@ -113,6 +119,7 @@ const Text = ({ text, userId, toggleScroll, scrollToText }) => {
       toast.success(error);
       handleClose();
     }
+    setDeleting(false);
   };
 
   const handleScrollToText = () => {
@@ -261,4 +268,4 @@ const Text = ({ text, userId, toggleScroll, scrollToText }) => {
   );
 };
 
-export default Text;
+export default Texts;

@@ -19,7 +19,7 @@ import {
   sendTextNotification,
   ticketHasBeenClaimed,
   ticketHasBeenClosed,
-} from '../backendApi';
+} from './client-notifications';
 import {
   setTickets,
   setClientTickets,

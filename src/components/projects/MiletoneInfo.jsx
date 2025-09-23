@@ -86,7 +86,7 @@ const MilestoneInfo = ({ milestone }) => {
           <List>
             <ListItem>
               <ListItemText
-                primary={`Responsible Tech: ${milestone.assigned.name}`}
+                primary={`Responsible Tech: ${milestone.assigned[0].name}`}
               />
             </ListItem>
             <ListItem>

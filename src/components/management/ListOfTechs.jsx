@@ -13,7 +13,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import { getTechs } from '../../api/main/techApi';
 import { useSelector } from 'react-redux';
 
-const ListOfTechs = ({ addTech, removeTech, upadateMyCollab, collab }) => {
+const ListOfTechs = ({ addTech, removeTech, updateMyCollab, collab }) => {
   useEffect(() => {
     getTechs();
   }, [getTechs]);
@@ -37,7 +37,7 @@ const ListOfTechs = ({ addTech, removeTech, upadateMyCollab, collab }) => {
   };
 
   const updateCollab = () => {
-    upadateMyCollab();
+    updateMyCollab();
     handleClose();
   };
 

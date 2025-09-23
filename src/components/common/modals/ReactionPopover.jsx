@@ -36,7 +36,6 @@ const ReactionPopover = ({
   };
 
   const handleSelect = (emoji) => {
-    console.log('Emoji', emoji);
     onEmojiSelect(emoji);
     if (from === 'text') handleClose();
   };

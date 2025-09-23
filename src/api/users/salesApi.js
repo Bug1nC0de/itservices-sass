@@ -13,7 +13,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import moment from 'moment';
-import { sendCollabNotification } from '../backendApi';
+import { sendCollabNotification } from './client-notifications';
 import store from '../../store';
 import {
   setClosedLeads,

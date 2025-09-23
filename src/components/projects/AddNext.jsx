@@ -1,8 +1,17 @@
 import { useState } from 'react';
-import { Grid, Alert, TextField, Modal, Button, Box } from '@mui/material';
+import {
+  Grid,
+  Alert,
+  TextField,
+  Modal,
+  Button,
+  Box,
+  LinearProgress,
+} from '@mui/material';
 import { SkipNext, Add } from '@mui/icons-material';
 import moment from 'moment';
 import { addNext } from '../../api/main/projectApi';
+import { toast } from 'react-toastify';
 
 const style = {
   position: 'absolute',
@@ -21,21 +30,28 @@ const style = {
 const AddNext = ({ projectId }) => {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
-
+  const [loading, setLoading] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const create = (e) => {
+  const create = async (e) => {
     e.preventDefault();
-
+    setLoading(true);
     let createdAt = moment().format();
 
-    addNext({
+    const res = await addNext({
       text,
       projectId,
       createdAt,
     });
 
+    if (res === 'success') {
+      toast.success('Update successful');
+    } else {
+      toast.error('Something went wrong');
+    }
+    setText('');
+    setLoading(false);
     setOpen(false);
   };
   return (
@@ -68,14 +84,18 @@ const AddNext = ({ projectId }) => {
               />
             </Grid>
 
-            <Button
-              onClick={create}
-              variant="contained"
-              color="warning"
-              fullWidth
-            >
-              Add Whats Next <SkipNext />
-            </Button>
+            {loading ? (
+              <LinearProgress />
+            ) : (
+              <Button
+                onClick={create}
+                variant="contained"
+                color="warning"
+                fullWidth
+              >
+                Add Whats Next <SkipNext />
+              </Button>
+            )}
           </Grid>
         </Box>
       </Modal>

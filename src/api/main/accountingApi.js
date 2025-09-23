@@ -1,7 +1,7 @@
 import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { firestore } from '../../firebse-config';
 import moment from 'moment';
-import { createInvoice } from '../backendApi';
+import { createInvoice } from './main-notifications';
 
 export const fetchServices = async () => {
   try {

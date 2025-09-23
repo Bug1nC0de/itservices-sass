@@ -38,11 +38,7 @@ export default function NextPredict({ setHowLong, howLong }) {
   return (
     <div>
       <List component="nav" sx={{ bgcolor: 'background.paper' }}>
-        <ListItem
-          button
-          aria-expanded={open ? 'true' : undefined}
-          onClick={handleClickListItem}
-        >
+        <ListItem button onClick={handleClickListItem}>
           <ListItemText secondary={options[selectedIndex]} />
         </ListItem>
       </List>
@@ -51,10 +47,6 @@ export default function NextPredict({ setHowLong, howLong }) {
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        MenuListProps={{
-          'aria-labelledby': 'lock-button',
-          role: 'listbox',
-        }}
       >
         {options.map((option, index) => (
           <MenuItem

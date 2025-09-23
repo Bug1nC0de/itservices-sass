@@ -11,9 +11,7 @@ import {
   addDoc,
 } from 'firebase/firestore';
 import { firestore } from '../../firebse-config';
-import axios from 'axios';
 import moment from 'moment';
-const backend = import.meta.env.VITE_BACKEND_URL;
 import store from '../../store';
 import {
   setUsers,
@@ -39,47 +37,6 @@ export const getClient = async (clientId) => {
   let clientUsers = jam.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
   store.dispatch(setClient(a));
   store.dispatch(setUsers(clientUsers));
-};
-
-//Create a new user//
-export const createClientUser = async ({
-  name,
-  surname,
-  position,
-  email,
-  cellphone,
-  password,
-  clientId,
-  createdAt,
-  clientName,
-}) => {
-  try {
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    };
-    const body = JSON.stringify({
-      name,
-      surname,
-      position,
-      email,
-      cellphone,
-      password,
-      clientId,
-      createdAt,
-      clientName,
-    });
-    const res = await axios.post(
-      `${backend}/api/firebase-admin/client-create-user`,
-      body,
-      config
-    );
-
-    console.log(res);
-  } catch (error) {
-    console.error('Error Creating user', error);
-  }
 };
 
 //Get client users//

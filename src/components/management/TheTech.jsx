@@ -6,12 +6,14 @@ import { useState, useEffect } from 'react';
 const TheTech = ({ techChosen, tech, techRemove, collab }) => {
   const [pickMe, setPickMe] = useState(false);
   useEffect(() => {
-    collab.forEach((team) => {
-      let id = team.id;
-      if (id === tech.id) {
-        setPickMe(true);
-      }
-    });
+    if (collab) {
+      collab.forEach((team) => {
+        let id = team.id;
+        if (id === tech.id) {
+          setPickMe(true);
+        }
+      });
+    }
   }, [collab, tech]);
   const addToJam = (tech) => {
     setPickMe(true);

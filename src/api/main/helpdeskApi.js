@@ -23,7 +23,7 @@ import {
   textNotification,
   ticketClaimed,
   closingTicketEmail,
-} from '../backendApi';
+} from './main-notifications';
 import {
   setClientTickets,
   setUserTickets,
@@ -257,6 +257,7 @@ export const fetchTicketTexts = async (ticketId) => {
 
 //send a message//
 export const sendText = async ({
+  imgUrl,
   text,
   authorId,
   authorName,
@@ -268,6 +269,7 @@ export const sendText = async ({
 
   try {
     await addDoc(message, {
+      imgUrl,
       text,
       authorId,
       authorName,
