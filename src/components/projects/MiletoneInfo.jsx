@@ -84,11 +84,13 @@ const MilestoneInfo = ({ milestone }) => {
             <AlertTitle>Review milestone</AlertTitle>
           </Alert>
           <List>
-            <ListItem>
-              <ListItemText
-                primary={`Responsible Tech: ${milestone.assigned[0].name}`}
-              />
-            </ListItem>
+            {milestone.assigned && (
+              <ListItem>
+                <ListItemText
+                  primary={`Responsible Tech: ${milestone.assigned[0].name}`}
+                />
+              </ListItem>
+            )}
             <ListItem>
               <ListItemText
                 primary={`Start date: ${moment(milestone.start).format(
