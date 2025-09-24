@@ -27,7 +27,7 @@ const TheTech = ({ techChosen, tech, techRemove, collab }) => {
 
   return (
     <Grid container>
-      <Grid item>
+      <Grid>
         {pickMe ? (
           <Button>
             <RadioButtonCheckedIcon onClick={() => removeFromJam(tech.id)} />
@@ -38,7 +38,7 @@ const TheTech = ({ techChosen, tech, techRemove, collab }) => {
           </Button>
         )}
       </Grid>
-      <Grid item>{tech.name}</Grid>
+      <Grid>{tech.name}</Grid>
     </Grid>
   );
 };

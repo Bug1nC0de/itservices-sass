@@ -4,6 +4,7 @@ import {
   useTheme,
   Typography,
   CircularProgress,
+  IconButton,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -16,6 +17,7 @@ import StatCard from '../common/StatCard';
 import { tokens } from '../../theme';
 import { useEffect } from 'react';
 import TodoGrid from './TodoGrid';
+import AddBoxIcon from '@mui/icons-material/AddBox';
 
 const MainTodos = () => {
   const navigate = useNavigate();
@@ -83,16 +85,25 @@ const MainTodos = () => {
           )}
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
-          <Typography
-            variant="h5"
-            style={{
-              marginTop: 20,
-              marginBottom: 10,
-              color: colors.blueAccent[500],
-            }}
-          >
-            Assigned Todos
-          </Typography>
+          <Grid container sx={{ justifyContent: 'space-between' }}>
+            <Typography
+              variant="h5"
+              style={{
+                marginTop: 20,
+                marginBottom: 10,
+                color: colors.blueAccent[500],
+              }}
+            >
+              Assigned Todos
+            </Typography>
+            <IconButton
+              sx={{ color: colors.greenAccent[300] }}
+              onClick={() => navigate('/create-todo')}
+            >
+              <AddBoxIcon />
+            </IconButton>
+          </Grid>
+
           {assignedToDos.length > 0 ? (
             <TodoGrid todos={assignedToDos} />
           ) : (

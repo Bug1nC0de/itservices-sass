@@ -29,7 +29,6 @@ const AddTask = ({ addToTaskArr }) => {
     } else {
       setTitle('');
       handleClose();
-
       addToTaskArr(title);
     }
   };
@@ -47,7 +46,7 @@ const AddTask = ({ addToTaskArr }) => {
       </Button>
       <Modal open={open} onClose={handleClose}>
         <Box sx={{ ...style }}>
-          <Grid item>
+          <Grid>
             <Alert icon={false} variant="outlined" severity="warning">
               Task title
             </Alert>
@@ -56,7 +55,7 @@ const AddTask = ({ addToTaskArr }) => {
                 {formError}
               </Button>
             )}
-            <Grid item style={{ marginBottom: '10px' }}>
+            <Grid sx={{ marginTop: '10px', marginBottom: '10px' }}>
               <TextField
                 label="Task title?"
                 variant="outlined"

@@ -27,6 +27,7 @@ import Sales from './components/sales/Sales.jsx';
 import LeadInfo from './components/sales/LeadInfo.jsx';
 import Todos from './components/todos/Todos.jsx';
 import Todo from './components/todos/Todo.jsx';
+import CreateTodo from './components/todos/CreateTodo.jsx';
 import CompleteTodos from './components/todos/CompleteTodos.jsx';
 import Suppliers from './components/suppliers/Suppliers.jsx';
 import CallITServices from './components/callitservices/CallITServices.jsx';
@@ -52,6 +53,7 @@ const router = createBrowserRouter(
         <Route path="/todos" element={<Todos />} />
         <Route path="/complete-todos" element={<CompleteTodos />} />
         <Route path="/todo/:todoId" element={<Todo />} />
+        <Route path="/create-todo" element={<CreateTodo />} />
         <Route path="/suppliers" element={<Suppliers />} />
         <Route path="/callitservices" element={<CallITServices />} />
       </Route>

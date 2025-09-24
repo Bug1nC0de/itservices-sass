@@ -1,7 +1,14 @@
-import { Alert, Box, Button, Grid, IconButton, Modal } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Grid,
+  IconButton,
+  Modal,
+  LinearProgress,
+} from '@mui/material';
 import { CheckCircleOutline, RateReview } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
-import LoadingButton from '@mui/lab/LoadingButton';
 
 const TaskComplete = ({
   task,
@@ -72,7 +79,7 @@ const TaskComplete = ({
                 <Grid container>
                   <Grid item>
                     {updating ? (
-                      <LoadingButton>Updating...</LoadingButton>
+                      <LinearProgress />
                     ) : (
                       <Button
                         variant="outlined"
@@ -113,7 +120,7 @@ const TaskComplete = ({
                 <Grid container>
                   <Grid item>
                     {updating ? (
-                      <LoadingButton>Updating...</LoadingButton>
+                      <LinearProgress color="success" />
                     ) : (
                       <Button
                         variant="outlined"

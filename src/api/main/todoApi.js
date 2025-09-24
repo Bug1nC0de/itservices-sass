@@ -12,6 +12,11 @@ import {
   addDoc,
   updateDoc,
   getDocs,
+  runTransaction,
+  deleteField,
+  arrayRemove,
+  arrayUnion,
+  deleteDoc,
 } from 'firebase/firestore';
 import {
   setMyTodos,
@@ -146,7 +151,7 @@ export const fetchTodo = async (todoId) => {
     if (prevTodo !== undefined) {
       await fetchPrevTodo(prevTodo);
     }
-    await getTodoTexts(todoId);
+    getTodoTexts(todoId);
     store.dispatch(setMyTodo(todo));
     updateCollab(arr);
   } catch (error) {
@@ -154,8 +159,8 @@ export const fetchTodo = async (todoId) => {
   }
 };
 
-export const getTodoTexts = async (todoId) => {
-  const textsRef = collection(firestore, 'todoText');
+export const getTodoTexts = (todoId) => {
+  const textsRef = collection(firestore, 'todo_texts');
 
   const q = query(
     textsRef,
@@ -191,8 +196,10 @@ export const theTaskList = async ({ myArr, todoId }) => {
 
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
     await fetchTodo(todoId);
+    return 'success';
   } catch (error) {
     console.error(error.message);
+    return 'failed';
   }
 };
 
@@ -234,13 +241,15 @@ export const createTodo = async ({
 
 //Send Todo Text//
 export const sendText = async ({
+  text,
+  imgUrl,
   authorId,
   authorName,
-  createdAt,
   todoId,
-  text,
+  createdAt,
+  replyTo,
 }) => {
-  const textRef = collection(firestore, 'todoText');
+  const textRef = collection(firestore, 'todo_texts');
   const todoRef = doc(firestore, 'todo', todoId);
 
   try {
@@ -248,13 +257,83 @@ export const sendText = async ({
     const todo = todoDoc.data();
     let assignedTo = todo.assignedTo;
     let createdBy = todo.createdBy;
-    await addDoc(textRef, { authorId, authorName, createdAt, text, todoId });
+    await addDoc(textRef, {
+      authorId,
+      authorName,
+      createdAt,
+      text,
+      todoId,
+      imgUrl,
+      replyTo,
+    });
 
     const title = authorName;
 
     await notifyCollab({ assignedTo, title, text, createdBy });
   } catch (error) {
     console.error(error.message);
+  }
+};
+
+//Text reaction//
+export const reactToText = async ({ emoji, userId, textId }) => {
+  if (!textId || !emoji || !userId) throw new Error('Missing params');
+
+  const ref = doc(firestore, 'todo_texts', textId);
+
+  return runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('Text not found');
+
+    const data = snap.data() || {};
+    const reactions = data.reactions || {};
+    const current = Array.isArray(reactions[emoji]) ? reactions[emoji] : [];
+    const hasReacted = current.includes(userId);
+
+    // Build the predicted next state for optimistic UI return
+    const nextSet = new Set(current);
+    if (hasReacted) nextSet.delete(userId);
+    else nextSet.add(userId);
+    const nextArr = Array.from(nextSet);
+
+    if (hasReacted) {
+      // Remove my reaction; delete key if it would become empty
+      if (current.length === 1) {
+        tx.update(ref, {
+          [`reactions.${emoji}`]: deleteField(),
+          updatedAt: moment().format(),
+        });
+      } else {
+        tx.update(ref, {
+          [`reactions.${emoji}`]: arrayRemove(userId),
+          updatedAt: moment().format(),
+        });
+      }
+    } else {
+      // Add my reaction (creates the array if missing)
+      tx.update(ref, {
+        [`reactions.${emoji}`]: arrayUnion(userId),
+        updatedAt: moment().format(),
+      });
+    }
+
+    // Return the next reactions map so caller can update UI immediately
+    const nextReactions = { ...reactions };
+    if (nextArr.length) nextReactions[emoji] = nextArr;
+    else delete nextReactions[emoji];
+
+    return nextReactions;
+  });
+};
+
+//Delete text//
+export const deleteText = async (textId) => {
+  try {
+    await deleteDoc(doc(firestore, 'todo_texts', textId));
+    return 'success';
+  } catch (error) {
+    console.log('Error deleting ticket: ', error);
+    return 'failed';
   }
 };
 
@@ -321,9 +400,11 @@ export const setTaskAsInComplete = async ({ todoId, task, todoComplete }) => {
       const type = 'todo';
       const id = todoId;
       await notifyCollab({ assignedTo, title, text, createdBy, type, id });
+      return 'success';
     }
   } catch (error) {
     console.error(error.message);
+    return 'failed';
   }
 };
 
@@ -439,8 +520,10 @@ export const setTodoAsInComplete = async (todoId) => {
     const type = 'todo';
     const id = todoId;
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
+    return 'success';
   } catch (error) {
     console.error(error.message);
+    return 'failed';
   }
 };
 
@@ -460,8 +543,10 @@ export const theCollab = async ({ myArr, todoId }) => {
     const type = 'todo';
     const id = todoId;
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
+    return 'success';
   } catch (error) {
     console.error(error.message);
+    return 'failed';
   }
 };
 
@@ -506,6 +591,6 @@ export const updateTaskList = (taskList) => {
   try {
     store.dispatch(setTaskList(taskList));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error Updating tasklist', error.message);
   }
 };
