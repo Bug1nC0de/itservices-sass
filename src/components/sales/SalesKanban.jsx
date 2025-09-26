@@ -260,8 +260,13 @@ export default function SalesKanban({
   return (
     <Box
       sx={{
+        width: '100%',
+        minWidth: 0,
+        maxWidth: '100%',
+        flexGrow: 1,
         overflowX: 'auto',
         overflowY: 'hidden',
+        px: 1,
         py: 2,
         overscrollBehaviorX: 'contain',
       }}

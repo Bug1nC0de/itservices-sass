@@ -25,6 +25,7 @@ import Projects from './components/projects/Projects.jsx';
 import Project from './components/projects/Project.jsx';
 import Sales from './components/sales/Sales.jsx';
 import LeadInfo from './components/sales/LeadInfo.jsx';
+import AddLead from './components/sales/AddLead.jsx';
 import Todos from './components/todos/Todos.jsx';
 import Todo from './components/todos/Todo.jsx';
 import CreateTodo from './components/todos/CreateTodo.jsx';
@@ -51,6 +52,7 @@ const router = createBrowserRouter(
         <Route path="/management" element={<Management />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/project/:id" element={<Project />} />
+        <Route path="/add-lead" element={<AddLead />} />
         <Route path="/sales" element={<Sales />} />
         <Route path="/lead-info/:leadId" element={<LeadInfo />} />
         <Route path="/todos" element={<Todos />} />

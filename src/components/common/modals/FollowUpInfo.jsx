@@ -13,6 +13,7 @@ import {
   Box,
   useTheme,
   CircularProgress,
+  LinearProgress,
 } from '@mui/material';
 import BorderColor from '@mui/icons-material/BorderColor';
 import moment from 'moment';
@@ -20,6 +21,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tokens } from '../../../theme';
 import { followUpDone } from '../../../api/main/salesApi';
+import { toast } from 'react-toastify';
 
 const FollowUpInfo = ({ fl, leadId, toLead }) => {
   const theme = useTheme();
@@ -72,7 +74,12 @@ const FollowUpInfo = ({ fl, leadId, toLead }) => {
   const completeFollow = async () => {
     setCompleting(true);
     let fid = fl.id;
-    await followUpDone({ leadId, fid });
+    const res = await followUpDone({ leadId, fid });
+    if (res === 'success') {
+      toast.success('Update successful');
+    } else {
+      toast.error('Update failed');
+    }
     setCompleting(false);
     handleClose();
   };
@@ -104,12 +111,12 @@ const FollowUpInfo = ({ fl, leadId, toLead }) => {
             Follow up info:
           </Alert>
           <Grid container>
-            <Grid xs={6} item>
+            <Grid size={{ xs: 6 }}>
               <Typography sx={{ marginTop: '10px', color: colors.grey[500] }}>
                 Scheduled follow up date;
               </Typography>
             </Grid>
-            <Grid xs={6} item>
+            <Grid size={{ xs: 6 }}>
               <Typography sx={{ marginTop: '10px', color: colors.grey[500] }}>
                 {moment(fl.date).format('ll')}
               </Typography>
@@ -117,12 +124,12 @@ const FollowUpInfo = ({ fl, leadId, toLead }) => {
           </Grid>
 
           <Grid sx={{ marginTop: '20px' }} container>
-            <Grid xs={6} item>
+            <Grid size={{ xs: 6 }}>
               <Typography sx={{ color: colors.grey[500] }}>
                 Follow up notes;
               </Typography>
             </Grid>
-            <Grid xs={6} item>
+            <Grid size={{ xs: 6 }}>
               <Typography sx={{ color: colors.grey[500] }}>
                 {fl.note}
               </Typography>
@@ -144,7 +151,7 @@ const FollowUpInfo = ({ fl, leadId, toLead }) => {
               Go to lead
             </Button>
           ) : completing ? (
-            <CircularProgress />
+            <LinearProgress color="success" />
           ) : (
             <Button
               variant="outlined"

@@ -48,8 +48,8 @@ const MainSales = () => {
       setKleads(combined);
     }
   }, [leads, collab_leads]);
-  const navToLead = (id) => {
-    navigate(`/lead-info/${id}`);
+  const navToLead = () => {
+    navigate(`/add-lead`);
   };
 
   const handleMove = async (leadId, newStage) => {
@@ -63,75 +63,128 @@ const MainSales = () => {
     setLoading(false);
   };
   return (
-    <Box sx={{ flexGrow: 1, p: 2 }}>
-      <Grid container style={{ marginTop: -15 }}>
-        <Grid size={{ xs: 11 }}>
-          <Typography variant="h6">Sales</Typography>
-        </Grid>
-        <Grid size={{ xs: 1 }}>
-          <Button
-            size="small"
-            sx={{ color: colors.grey[200] }}
-            onClick={navToLead}
-          >
-            <AddBoxOutlined />
-          </Button>
-        </Grid>
-      </Grid>
+    <Box
+      sx={{
+        flexGrow: 1,
+        p: 2,
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        overflowX: 'hidden',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          gap: 1,
+          mt: -1,
+        }}
+      >
+        <Typography variant="h6">Sales</Typography>
+        <Button
+          size="small"
+          sx={{ color: colors.grey[200], mr: 15 }}
+          onClick={navToLead}
+        >
+          <AddBoxOutlined />
+        </Button>
+      </Box>
 
-      <Grid container spacing={2} style={{ marginBottom: 20 }}>
-        <Grid size={{ xs: 12, md: 4 }}>
+      <Box
+        sx={{
+          width: '100%',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
+      >
+        <Box
+          sx={{
+            flex: '1 1 240px',
+            minWidth: 240,
+            maxWidth: 360,
+          }}
+        >
           <StatCard title="Pipeline worth" count={0} />
-        </Grid>
+        </Box>
 
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Box
+          sx={{
+            flex: '1 1 240px',
+            minWidth: 240,
+            maxWidth: 360,
+          }}
+        >
           <StatCard title="Active Sales" count={leads && leads.length} />
-        </Grid>
+        </Box>
 
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Box
+          sx={{
+            flex: '1 1 240px',
+            minWidth: 240,
+            maxWidth: 360,
+          }}
+        >
+          <StatCard
+            title="Collaborated Sales"
+            count={collab_leads && collab_leads.length}
+          />
+        </Box>
+
+        <Box
+          sx={{
+            flex: '1 1 240px',
+            minWidth: 240,
+            maxWidth: 360,
+          }}
+        >
           <StatCard
             title="Closed Sales"
             count={closed_leads && closed_leads.length}
           />
-        </Grid>
-      </Grid>
+        </Box>
+
+        <Box
+          sx={{
+            flex: '1 1 240px',
+            minWidth: 240,
+            maxWidth: 360,
+          }}
+        >
+          <StatCard title="Average close rate" count={0} />
+        </Box>
+      </Box>
       {loading && <LinearProgress color="success" />}
-      <Grid>
+      <Box
+        sx={{
+          flexGrow: 1,
+          minWidth: 0,
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
+        }}
+      >
         {!kleads ? (
           <CircularProgress />
         ) : kleads.length > 0 ? (
-          <Grid container>
-            <Grid size={{ xs: 12 }} sx={{ minWidth: 0, overflowX: 'hidden' }}>
-              {!kleads ? (
-                <CircularProgress />
-              ) : kleads.length > 0 ? (
-                <SalesKanban
-                  sales={kleads}
-                  onMove={handleMove}
-                  stagesOrder={[
-                    'Recon',
-                    'Pitch',
-                    'Quote',
-                    'Follow up',
-                    'Close',
-                  ]}
-                />
-              ) : (
-                <Typography variant="h6" sx={{ textAlign: 'center', mt: 2 }}>
-                  No Leads Yet...
-                </Typography>
-              )}
-            </Grid>
-          </Grid>
+          <Box sx={{ width: '100%', minWidth: 0 }}>
+            <SalesKanban
+              sales={kleads}
+              onMove={handleMove}
+              stagesOrder={['Recon', 'Pitch', 'Quote', 'Follow up', 'Close']}
+            />
+          </Box>
         ) : (
-          <Typography
-            variant="h6"
-            style={{ textAlign: 'center', marginTop: '20px' }}
-          >
+          <Typography variant="h6" sx={{ textAlign: 'center', mt: 2 }}>
             No Leads Yet...
           </Typography>
         )}
-      </Grid>
+      </Box>
     </Box>
   );
 };
