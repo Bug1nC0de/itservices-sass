@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Grid,
+  LinearProgress,
   Modal,
   Typography,
   useTheme,
@@ -27,6 +28,7 @@ const ConfirmLeadCreation = ({
 }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -58,6 +60,7 @@ const ConfirmLeadCreation = ({
   };
 
   const createTheLead = async () => {
+    setCreating(true);
     let createdBy = {
       name: userInfo.name,
       id: userInfo.id,
@@ -75,6 +78,7 @@ const ConfirmLeadCreation = ({
       createdBy,
       createdAt,
     });
+    setCreating(false);
     handleClose();
     navToNewLead(res);
   };
@@ -213,14 +217,18 @@ const ConfirmLeadCreation = ({
               )}
             </Grid>
           </Grid>
-          <Button
-            sx={{ mt: '15px' }}
-            variant="outlined"
-            onClick={() => createTheLead()}
-            fullWidth
-          >
-            Create lead
-          </Button>
+          {creating ? (
+            <LinearProgress color="success" />
+          ) : (
+            <Button
+              sx={{ mt: '15px' }}
+              variant="outlined"
+              onClick={() => createTheLead()}
+              fullWidth
+            >
+              Create lead
+            </Button>
+          )}
         </Box>
       </Modal>
     </>

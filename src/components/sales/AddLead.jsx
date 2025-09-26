@@ -26,7 +26,7 @@ import { getTechs } from '../../api/main/techApi';
 import { v4 as uuidv4 } from 'uuid';
 import { tokens } from '../../theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import ListOfClients from '../Clients/ListOfClients';
+import ListOfClients from '../clients/ListOfClients';
 import NoteToLead from './NoteToLead';
 import FollowUpToNote from './FollowUpToNote';
 import RemoveIcon from '@mui/icons-material/Remove';
