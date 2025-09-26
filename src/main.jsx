@@ -31,6 +31,9 @@ import CreateTodo from './components/todos/CreateTodo.jsx';
 import CompleteTodos from './components/todos/CompleteTodos.jsx';
 import Suppliers from './components/suppliers/Suppliers.jsx';
 import CallITServices from './components/callitservices/CallITServices.jsx';
+import GenInvoice from './components/accounting/GenInvoice.jsx';
+import GenQuote from './components/accounting/GenQuote.jsx';
+import ConfirmDocument from './components/accounting/ConfirmDocument.jsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -56,6 +59,9 @@ const router = createBrowserRouter(
         <Route path="/create-todo" element={<CreateTodo />} />
         <Route path="/suppliers" element={<Suppliers />} />
         <Route path="/callitservices" element={<CallITServices />} />
+        <Route path="/gen-quote/:leadId" element={<GenQuote />} />
+        <Route path="/gen-invoice/:leadId" element={<GenInvoice />} />
+        <Route path="/confirm-document" element={<ConfirmDocument />} />
       </Route>
     </Route>
   )

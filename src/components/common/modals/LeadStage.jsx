@@ -3,13 +3,13 @@ import {
   Button,
   Divider,
   Grid,
+  LinearProgress,
   Modal,
   Typography,
   useTheme,
 } from '@mui/material';
 import { useState } from 'react';
 import { tokens } from '../../../theme';
-import { LoadingButton } from '@mui/lab';
 import { useNavigate } from 'react-router-dom';
 
 const style = {
@@ -157,9 +157,7 @@ const LeadStage = ({ leadStage, changeLeadStage, leadId }) => {
               Current stage: {leadStage}
             </Button>
           ) : changing ? (
-            <LoadingButton loading variant="contained" fullWidth>
-              Changing stage...
-            </LoadingButton>
+            <LinearProgress />
           ) : changeStage === 'Close' ? (
             <Button
               fullWidth

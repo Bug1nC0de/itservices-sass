@@ -13,6 +13,11 @@ import {
   getDocs,
   updateDoc,
   setDoc,
+  runTransaction,
+  deleteField,
+  arrayRemove,
+  arrayUnion,
+  deleteDoc,
 } from 'firebase/firestore';
 import { notifyCollab } from './main-notifications';
 import {
@@ -121,8 +126,10 @@ export const addLeadNote = async ({ leadId, note, createdAt, createdBy }) => {
     const id = leadId;
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
     await getLeadNotes(leadId);
+    return 'success';
   } catch (error) {
     console.error(error.message);
+    return 'failed';
   }
 };
 
@@ -135,7 +142,7 @@ export const getLeadNotes = async (leadId) => {
     const notes = jam.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     store.dispatch(setLeadNotes(notes));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error geting lead notes: ', error.message);
   }
 };
 
@@ -169,8 +176,10 @@ export const createFollowUp = async ({
     const id = leadId;
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
     await getFollowUps(leadId);
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error creating follow up', error.message);
+    return 'failed';
   }
 };
 
@@ -188,7 +197,7 @@ export const getFollowUps = async (leadId) => {
     const follows = jam.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     store.dispatch(setLeadFollowUps(follows));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error getting follow ups', error.message);
   }
 };
 
@@ -217,13 +226,11 @@ export const fetchMyLeads = async (id) => {
         return lead.pipeline === false;
       });
 
-      //   dispatch({ type: GET_LEAD_QUOTE, payload: null });
-      //   dispatch({ type: GET_LEAD_INVOICE, payload: null });
       store.dispatch(setLeads(pipeline));
       store.dispatch(setClosedLeads(closed));
     });
   } catch (error) {
-    console.error(error.message);
+    console.error('Error fetching leads: ', error.message);
   }
 };
 
@@ -243,7 +250,7 @@ export const getCollabLeads = async (id) => {
       store.dispatch(setCollabLeads(leads));
     });
   } catch (error) {
-    console.error(error.message);
+    console.error('Error fetching collab leads: ', error.message);
   }
 };
 
@@ -256,7 +263,7 @@ export const getLead = async (leadId) => {
     const theLead = lead.data();
     store.dispatch(setLead(theLead));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error fetching lead: ', error.message);
   }
 };
 
@@ -324,8 +331,10 @@ export const followUpDone = async ({ leadId, fid }) => {
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
     await getFollowUps(leadId);
     await getDoneFollowUps(leadId);
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error completing follow up: ', error.message);
+    return 'failed';
   }
 };
 
@@ -343,7 +352,7 @@ export const getDoneFollowUps = async (leadId) => {
     const done = jam.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     store.dispatch(setDone(done));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error getting done follow ups', error.message);
   }
 };
 
@@ -361,7 +370,7 @@ export const getScheduledFollowUps = async (id) => {
     const followUp = jam.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     store.dispatch(setScheduled(followUp));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error getting scheduled follow ups:', error.message);
   }
 };
 
@@ -383,8 +392,10 @@ export const changeLeadStage = async ({ newStage, leadId }) => {
     const id = leadId;
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
     await getLead(leadId);
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error changing lead stage: ', error.message);
+    return 'failed';
   }
 };
 
@@ -417,6 +428,7 @@ export const updateLeadFile = async ({ type, url, leadId }) => {
         id,
       });
       await getLead(leadId);
+      return 'success';
     } else if (type === 'lead_pitch') {
       //pitch
       const newFields = { pitch: url };
@@ -436,6 +448,7 @@ export const updateLeadFile = async ({ type, url, leadId }) => {
         id,
       });
       await getLead(leadId);
+      return 'success';
     } else if (type === 'lead_invoice') {
       //invoice
       const newFields = { invoice: url };
@@ -455,17 +468,17 @@ export const updateLeadFile = async ({ type, url, leadId }) => {
         id,
       });
       await getLead(leadId);
+      return 'success';
     }
-
-    //   dispatch({ type: LEAD_FILE_URL, payload: null });
   } catch (error) {
     console.error(error.message);
+    return 'failed';
   }
 };
 
 //Fetch Lead Texts//
 export const fetchLeadText = async (leadId) => {
-  const textsRef = collection(firestore, 'leadText');
+  const textsRef = collection(firestore, 'lead_texts');
 
   const q = query(
     textsRef,
@@ -485,17 +498,27 @@ export const fetchLeadText = async (leadId) => {
 
 //Send lead text//
 export const sendLeadText = async ({
+  text,
+  imgUrl,
   authorId,
   authorName,
-  createdAt,
-  text,
   leadId,
+  createdAt,
+  replyTo,
 }) => {
-  const textRef = collection(firestore, 'leadText');
+  const textRef = collection(firestore, 'lead_texts');
   const leadRef = doc(firestore, 'leads', leadId);
 
   try {
-    await addDoc(textRef, { authorId, authorName, createdAt, text, leadId });
+    await addDoc(textRef, {
+      authorId,
+      authorName,
+      createdAt,
+      text,
+      leadId,
+      imgUrl,
+      replyTo,
+    });
     const lead = await getDoc(leadRef);
     const theLead = lead.data();
     const assignedTo = theLead.collab;
@@ -505,7 +528,69 @@ export const sendLeadText = async ({
     const id = leadId;
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
   } catch (error) {
-    console.error(error);
+    console.error('Error Sending lead text: ', error);
+  }
+};
+
+//Text reaction//
+export const reactToText = async ({ emoji, userId, textId }) => {
+  if (!textId || !emoji || !userId) throw new Error('Missing params');
+
+  const ref = doc(firestore, 'lead_texts', textId);
+
+  return runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('Text not found');
+
+    const data = snap.data() || {};
+    const reactions = data.reactions || {};
+    const current = Array.isArray(reactions[emoji]) ? reactions[emoji] : [];
+    const hasReacted = current.includes(userId);
+
+    // Build the predicted next state for optimistic UI return
+    const nextSet = new Set(current);
+    if (hasReacted) nextSet.delete(userId);
+    else nextSet.add(userId);
+    const nextArr = Array.from(nextSet);
+
+    if (hasReacted) {
+      // Remove my reaction; delete key if it would become empty
+      if (current.length === 1) {
+        tx.update(ref, {
+          [`reactions.${emoji}`]: deleteField(),
+          updatedAt: moment().format(),
+        });
+      } else {
+        tx.update(ref, {
+          [`reactions.${emoji}`]: arrayRemove(userId),
+          updatedAt: moment().format(),
+        });
+      }
+    } else {
+      // Add my reaction (creates the array if missing)
+      tx.update(ref, {
+        [`reactions.${emoji}`]: arrayUnion(userId),
+        updatedAt: moment().format(),
+      });
+    }
+
+    // Return the next reactions map so caller can update UI immediately
+    const nextReactions = { ...reactions };
+    if (nextArr.length) nextReactions[emoji] = nextArr;
+    else delete nextReactions[emoji];
+
+    return nextReactions;
+  });
+};
+
+//Delete text//
+export const deleteText = async (textId) => {
+  try {
+    await deleteDoc(doc(firestore, 'lead_texts', textId));
+    return 'success';
+  } catch (error) {
+    console.log('Error deleting ticket: ', error);
+    return 'failed';
   }
 };
 
@@ -543,8 +628,10 @@ export const leadToClient = async ({
     const id = leadId;
     await notifyCollab({ assignedTo, title, text, createdBy, type, id });
     await getLead(leadId);
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error turning lead to client: ', error.message);
+    return 'failed';
   }
 };
 
@@ -576,8 +663,10 @@ export const createContact = async ({
     });
     //   dispatch(setAlert('Contact successfully added...', 'success'));
     await fetchContacts(techId);
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error creating contact', error.message);
+    return 'failed';
   }
 };
 
@@ -594,7 +683,7 @@ export const fetchContacts = async (techId) => {
     const contacts = jam.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     store.dispatch(setMyContacts(contacts));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error fetching contacts: ', error.message);
   }
 };
 
@@ -606,7 +695,7 @@ export const reviewMyContacts = ({ contacts }) => {
     //   );
     store.dispatch(setReviewContacts(contacts));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error reviewing contacts: ', error.message);
   }
 };
 
@@ -615,7 +704,7 @@ export const removeReview = () => {
   try {
     store.dispatch(setReviewContacts(null));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error removing review', error.message);
   }
 };
 
@@ -638,9 +727,10 @@ export const saveImportedContacts = async ({ contacts, techId }) => {
         createdAt,
       });
     }
-    //   dispatch(setAlert('Contacts have been successfully saved...', 'success'));
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error saving contacts: ', error.message);
+    return 'failed';
   }
 };
 
@@ -660,8 +750,10 @@ export const addServiceOrProduct = async ({ techId, price, name, type }) => {
     });
     //   dispatch('Item added successfully', 'success');
     await fetchItems();
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error adding service or product: ', error.message);
+    return 'failed';
   }
 };
 
@@ -676,51 +768,77 @@ export const fetchItems = async () => {
     const items = jam.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     store.dispatch(setItems(items));
   } catch (error) {
-    console.error(error.message);
+    console.error('Error fetching items: ', error.message);
   }
 };
 
 //Add note to new lead//
 export const updateNoteToNewLead = (arr) => {
   try {
-    console.log('Dispatch: ', arr);
-    // dispatch({ type: ADD_NOTE, payload: arr });
     store.dispatch(setLeadNotes(arr));
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error adding note: ', error.message);
+    return 'failed';
   }
 };
 
 //Add Followup to new note//
 export const updateFollowToNewNote = (followup) => {
   try {
-    console.log('Dispatch: ', followup);
     // dispatch({ type: ADD_FOLLOW, payload: followup });
     store.dispatch(setLeadFollowUps(followup));
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error adding following up: ', error.message);
+    return 'failed';
   }
 };
 
 //Collab on lead//
 export const updateCollab = (arr) => {
-  console.log('Dispatch: ', arr);
   try {
     // dispatch({ type: ADD_COLLAB, payload: arr });
     store.dispatch(setCollabCachedAdd(arr));
+    return 'success';
   } catch (error) {
-    console.error(error.message);
+    console.error('Error updating collab: ', error.message);
+    return 'failed';
   }
 };
 
 //Remove from collab//
 export const removeFromCollab = (arr) => {
-  console.log('dispatch: ', arr);
   try {
     // dispatch({ type: REMOVE_COLLAB, payload: arr });
     store.dispatch(setCollabCachedRemove(arr));
+    return 'success';
+  } catch (error) {
+    console.error('Error removing collab', error.message);
+    return 'failed';
+  }
+};
+
+//Update Collaboration//
+export const theCollab = async ({ myArr, leadId }) => {
+  const leadRef = doc(firestore, 'leads', leadId);
+  const leadDoc = await getDoc(leadRef);
+  const lead = leadDoc.data();
+  try {
+    const newFields = { collab: myArr };
+    await updateDoc(leadRef, newFields);
+    await getLead(leadId);
+    const assignedTo = lead.collab;
+    const createdBy = lead.createdBy;
+    const title = 'Lead Collob update...';
+    const text = lead.name;
+    const type = 'leads';
+    const id = leadId;
+    await notifyCollab({ assignedTo, title, text, createdBy, type, id });
+    return 'success';
   } catch (error) {
     console.error(error.message);
+    return 'failed';
   }
 };
 
@@ -728,8 +846,10 @@ export const removeFromCollab = (arr) => {
 export const updateClientToLead = (client) => {
   try {
     store.dispatch(setClient(client));
+    return 'success';
     // dispatch({ type: ADD_CLIENT_TO_LEAD, payload: client });
   } catch (error) {
-    console.error(error.message);
+    console.error('Error adding client: ', error.message);
+    return 'failed';
   }
 };

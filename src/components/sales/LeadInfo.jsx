@@ -8,13 +8,15 @@ import {
   Button,
   useTheme,
   Paper,
-  FormControl,
-  TextField,
   IconButton,
   Grid,
+  CardContent,
+  CardMedia,
+  ListItem,
+  LinearProgress,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
-import { ChevronLeft, Launch, SendOutlined } from '@mui/icons-material';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, Launch, Cancel } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   getLead,
@@ -22,30 +24,76 @@ import {
   getLeadNotes,
   getFollowUps,
   getDoneFollowUps,
+  reactToText,
+  deleteText,
+  sendLeadText,
+  updateCollab,
+  theCollab,
+  changeLeadStage,
 } from '../../api/main/salesApi';
+import { setDocClient } from '../../api/main/accountingApi';
+import { uploadFile, clearFileUrl } from '../../api/storageApi';
 import { tokens } from '../../theme';
 import { useSelector } from 'react-redux';
 import AddLeadNote from '../common/modals/AddLeadNote';
 import ScheduleFollow from '../common/modals/ScheduleFollowUp';
 import FollowUpInfo from '../common/modals/FollowUpInfo';
-import Text from '../common/Texts';
+import Texts from '../common/Texts';
 import LeadStage from '../common/modals/LeadStage';
 import ListOfTechs from '../management/ListOfTechs';
+import SendMessageComponent from '../common/SendMessageComponent';
+import { useReactMediaRecorder } from 'react-media-recorder';
+import moment from 'moment';
+import { toast } from 'react-toastify';
 
 const LeadInfo = () => {
   const { leadId } = useParams();
   const navigate = useNavigate();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-
   const [collab, setCollab] = useState([]);
   const [leadStage, setLeadStage] = useState(null);
   const [createdBy, setCreatedBy] = useState(null);
   const [text, setText] = useState('');
-
+  const [loading, setLoading] = useState(false);
   const { userInfo } = useSelector((state) => state.auth);
-  const { lead, lead_notes, leadFollowUps, texts, quote, invoice, done } =
-    useSelector((state) => state.sales);
+  const {
+    lead,
+    lead_notes,
+    leadFollowUps,
+    texts,
+    quote,
+    invoice,
+    done,
+    collabCacheAdd,
+  } = useSelector((state) => state.sales);
+
+  const [replyTo, setReplyTo] = useState(null);
+  const [replyToVoice, setReplyVoice] = useState(false);
+  const [audioURL, setAudioURL] = useState('');
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [client, setClient] = useState(null);
+
+  const scroll = useRef();
+  const { file_url } = useSelector((state) => state.storage);
+
+  const { status, startRecording, stopRecording, previewAudioStream } =
+    useReactMediaRecorder({
+      audio: true,
+      askPermissionOnMount: true,
+      onStop: (blobUrl, blob) => {
+        setAudioURL(blobUrl);
+        setAudioBlob(blob);
+      },
+    });
+  const toggleRecording = () => {
+    if (status === 'recording') {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
 
   const getLeadInfo = async () => {
     getLead(leadId);
@@ -66,26 +114,149 @@ const LeadInfo = () => {
       setCreatedBy(lead.createdBy);
       setLeadStage(lead.stage);
       setCollab(lead.collab);
+      setClient(lead.client);
     }
   }, [lead]);
 
+  useEffect(() => {
+    if (file_url) {
+      let authorId = userInfo.id;
+      let imgUrl = !audioBlob ? file_url.url : null;
+      let msg = audioBlob ? file_url.url : text;
+      let authorName = userInfo.name;
+      let createdAt = moment().format();
+
+      let replyText = replyTo && replyTo;
+      sendLeadText({
+        text: msg,
+        imgUrl,
+        authorId,
+        authorName,
+        leadId,
+        createdAt,
+        replyTo: replyText,
+      });
+      clearFileUrl();
+      setAudioBlob(null);
+      setAudioURL('');
+      setText('');
+      setSending(false);
+    }
+  }, [file_url]);
+
   if (!lead || !texts) return <CircularProgress />;
 
-  const changeLeadStage = async () => {};
-  const navToGenQuote = () => {};
-  const navToGenInvoice = () => {};
-  const addTech = () => {};
-  const removeTech = () => {};
-  const updateMyCollab = () => {};
+  const navToGenInvoice = () => {
+    setDocClient(client);
+    navigate(`/gen-invoice/${leadId}`);
+  };
+  const navToGenQuote = () => {
+    setDocClient(client);
+    navigate(`/gen-quote/${leadId}`);
+  };
+  const addTech = (tech) => {
+    //Check to see if tech is part of orignal team//
+    const loot = collabCacheAdd.filter((collab) => {
+      let id = collab.id;
+      let techId = tech.id;
+      return id === techId;
+    });
+    if (loot.length === 0) {
+      //If tech is not part of the original team add them to add cache//
+      const updatedUserList = [...collabCacheAdd, tech];
+      updateCollab(updatedUserList);
+    }
+  };
+  const removeTech = (techId) => {
+    // Filter collabCacheAdd to exclude the tech with the given techId
+    const updatedCollab = collabCacheAdd.filter((tech) => tech.id !== techId);
+
+    // Update both contexts with the filtered array
+    updateCollab(updatedCollab);
+  };
+  const updateMyCollab = async () => {
+    setLoading(true);
+    let myArr = collabCacheAdd;
+    const res = await theCollab({ myArr, leadId });
+    if (res === 'success') {
+      toast.success('Update successful');
+    } else {
+      toast.error('Update failed');
+    }
+    setLoading(false);
+  };
+
+  const scrollToText = (textId) => {
+    const element = document.getElementById(textId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const toggleScroll = (text) => {
+    if (texts) {
+      if (scroll.current) {
+        scroll.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    setReplyTo(text);
+    if (text.text.length === 0) return;
+    const audioChecker = text.text.split('=');
+    if (audioChecker.length === 1) return;
+    const check = audioChecker[1].split('&');
+    const loot = check[0];
+    if (loot === 'media') {
+      setReplyVoice(true);
+    }
+  };
+
+  const onEmojiSelect = (emoji) => {
+    let txt = text + emoji;
+    setText(txt);
+  };
+
   const onSubmit = async (e) => {
+    if (sending) return;
     e.preventDefault();
-    // handle send text
+    if (audioBlob) {
+      setSending(true);
+      const audioFile = new File([audioBlob], `voiceNote_${Date.now()}.webm`, {
+        type: 'audio/webm',
+      });
+      uploadFile({ file: audioFile, type: 'sales' });
+    } else if (text.trim() !== '') {
+      setSending(true);
+      let authorId = userInfo.id;
+      let authorName = userInfo.name;
+      let createdAt = moment().format();
+
+      let replyText = replyTo && replyTo;
+      let imgUrl = null;
+      try {
+        await sendLeadText({
+          text,
+          imgUrl,
+          authorId,
+          authorName,
+          leadId,
+          createdAt,
+          replyTo: replyText && replyText,
+        });
+        setText('');
+        setReplyTo(null);
+        setSending(false);
+      } catch (error) {
+        console.error('Error Sending message: ', error);
+      }
+    } else {
+      return toast.error('Cannot send a blank text');
+    }
   };
 
   return (
     <>
       {/* Header */}
-      <Grid container spacing={2} alignItems="center">
+      <Grid container spacing={2} alignItems="center" sx={{ mb: 3, mt: -5 }}>
         <Grid size={1}>
           <Button onClick={() => navigate(-1)} sx={{ color: colors.grey[500] }}>
             <ChevronLeft />
@@ -100,9 +271,7 @@ const LeadInfo = () => {
           </Typography>
         </Grid>
       </Grid>
-
-      <Divider sx={{ mb: 2 }} />
-
+      {loading && <LinearProgress color="success" />}
       <Grid container spacing={2}>
         {/* Left Panel - Lead Details */}
         <Grid size={{ xs: 12, md: 4 }}>
@@ -327,39 +496,106 @@ const LeadInfo = () => {
 
           {/* Chat */}
           <Paper
-            sx={{
-              mt: 2,
-              height: '80vh',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
+            elevation={4}
+            sx={{ display: 'flex', flexDirection: 'column', height: '78vh' }}
           >
-            <Box flex={1} p={2} overflow="auto">
-              <List>
-                {texts.length === 0
-                  ? 'No texts'
-                  : texts.map((t) => (
-                      <Text key={t.id} text={t} userId={userInfo.id} />
-                    ))}
+            <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+              <List id="chat-messages" disablePadding>
+                {!texts ? (
+                  <CircularProgress />
+                ) : texts.length === 0 ? (
+                  <ListItem disableGutters sx={{ px: 2, py: 1 }}>
+                    No texts
+                  </ListItem>
+                ) : (
+                  texts.map((t) => (
+                    <Texts
+                      key={t.id}
+                      text={t}
+                      userId={userInfo.id}
+                      toggleScroll={toggleScroll}
+                      scrollToText={scrollToText}
+                      reactToText={reactToText}
+                      deleteText={deleteText}
+                    />
+                  ))
+                )}
+                <div ref={scroll} />
               </List>
             </Box>
-            <Box
-              component="form"
-              onSubmit={onSubmit}
-              sx={{ p: 2, display: 'flex', gap: 1 }}
-            >
-              <FormControl fullWidth>
-                <TextField
-                  label="Type your message"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
+            {replyTo && (
+              <Box sx={{ position: 'relative' }}>
+                <CardContent
+                  sx={{
+                    backgroundColor: colors.grey[700],
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  {replyToVoice ? (
+                    <audio
+                      src={replyTo.text}
+                      controls
+                      style={{
+                        width: '95%',
+                        borderRadius: 999,
+                        backgroundColor: 'rgba(70, 62, 62, 0.34)',
+                      }}
+                    />
+                  ) : (
+                    <Typography sx={{ color: 'white' }}>
+                      {replyTo.text.length > 0 ? replyTo.text : 'Photo'}
+                    </Typography>
+                  )}
+                  {replyTo.imgUrl && (
+                    <CardMedia
+                      component="img"
+                      sx={{
+                        width: 50,
+                        height: 50,
+                        objectFit: 'cover',
+                        ml: 2,
+                      }}
+                      image={replyTo.imgUrl}
+                      alt="Reply image"
+                    />
+                  )}
+                </CardContent>
+                <IconButton
                   size="small"
-                />
-              </FormControl>
-              <IconButton type="submit" size="small" color="primary">
-                <SendOutlined />
-              </IconButton>
-            </Box>
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    color: 'white',
+                  }}
+                  onClick={() => {
+                    setReplyVoice(false);
+                    setReplyTo(null);
+                  }}
+                >
+                  <Cancel fontSize="small" />
+                </IconButton>
+              </Box>
+            )}
+            {sending && <LinearProgress color="success" />}
+            <SendMessageComponent
+              onSubmit={onSubmit}
+              text={text}
+              toggleRecording={toggleRecording}
+              status={status}
+              colors={colors}
+              previewAudioStream={previewAudioStream}
+              audioURL={audioURL}
+              setText={setText}
+              onEmojiSelect={onEmojiSelect}
+              uploadFile={uploadFile}
+              setAudioBlob={setAudioBlob}
+              setAudioURL={setAudioURL}
+              setSending={setSending}
+              type="sales"
+            />
           </Paper>
         </Grid>
       </Grid>

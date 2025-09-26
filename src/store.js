@@ -10,6 +10,7 @@ import projectReducer from './slices/projectSlice';
 import supplierReducer from './slices/supplierSlice';
 import storageReducer from './slices/storageSlice';
 import callITServicesReducer from './slices/callitservicesSlice';
+import accountingReducer from './slices/accountingSlice';
 
 const store = configureStore({
   reducer: {
@@ -23,6 +24,7 @@ const store = configureStore({
     suppliers: supplierReducer,
     storage: storageReducer,
     callitservices: callITServicesReducer,
+    accounting: accountingReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
   },
 });
